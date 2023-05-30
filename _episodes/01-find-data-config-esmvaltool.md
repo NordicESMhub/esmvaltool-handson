@@ -95,7 +95,7 @@ git clone git@github.com:NorESMhub/noresmvaltool.git
 Copy the configuration files to your personal folder
 ```bash
 cd ~/noresmvaltool/esmvaltool/config
-cp config_user.yml config_developer.yml ~/.esmvaltool/
+cp config-user.yml config-developer.yml ~/.esmvaltool/
 ```
 Make a folder for the workshop and activate ESMValTool
 ```bash
@@ -161,7 +161,7 @@ http://www.esmvaltool.org
 ---
 
 ## Explore the output of the ESMValTool
-If the run is a success, you should be able find an esmvaltool output under, giving the default `output_dir` in the template of `config_user.yml`:
+If the run is a success, you should be able find an esmvaltool output under, giving the default `output_dir` in the template of `config-user.yml`:
 ```
 http://ns9560k.web.sigma2.no/diagnostics/esmvaltool/
 ```
