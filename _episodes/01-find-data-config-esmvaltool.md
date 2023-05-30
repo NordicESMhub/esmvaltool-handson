@@ -89,7 +89,7 @@ Explore CMIP data by NorESM and other ESMs at:
 Clone the github repository with temporary configuration files for NIRD.
 ```bash
 cd ~/
-git clone git@github.com:NorESMhub/noresmvaltool.git
+git clone https://github.com/NorESMhub/noresmvaltool.git
 ```
 
 Copy the configuration files to your personal folder
