@@ -17,6 +17,147 @@ Here are two tasks:
 1. add an observational dataset
 2. save the data and plots provenance record
 
+> ## full recipe_mydiag.yml
+```yaml
+> # ESMValTool
+> # recipe_mydiag.yml
+> 
+> documentation:
+>   title:
+>     An example recipe
+>   description:
+>     An example recipe created for the ESMValTool Workshop
+>   authors:
+>     - unmaintained
+>   maintainer:
+>     - unmaintained
+> 
+> datasets:
+> #- {dataset: bcc-csm1-1, project: CMIP5, mip: Amon, exp: historical, ensemble: r2i1p1, grid: gn}
+> #- {dataset: CanESM2, project: CMIP5, mip: Amon, exp: historical, ensemble: r1i1p1, grid: gn}
+> #- {dataset: BCC-ESM1, project: CMIP6, mip: Amon, exp: historical, ensemble: r1i1p1f1, grid: gn}
+>  - {dataset: NorESM2-LM, project: CMIP6, mip: Amon, exp: historical, ensemble: r1i1p1f1, grid: gn}
+>  - {dataset: EC-Earth3, project: CMIP6, mip: Amon, exp: historical, ensemble: r1i1p1f1, grid: gr}
+> 
+> preprocessors:
+>   mypp_map:
+>     regrid: &regrid_setting
+>       target_grid: 1x1
+>       scheme: linear
+>     climate_statistics:
+>       operator: mean
+>       period: full
+>     convert_units:
+>       units: degrees_C
+>   mypp_ts:
+>     regrid:
+>       <<: *regrid_setting
+>       #target_grid: 1x1
+>       #scheme: linear  
+>     area_statistics:
+>       operator: mean
+>     annual_statistics:
+>       operator: mean
+>     convert_units:
+>       units: degrees_C
+> 
+> diagnostics:
+>   map:
+>     description: "my test diagnostic script"
+>     variables:
+>       tas_map:
+>         short_name: tas
+>         preprocessor: mypp_map
+>         mip: Amon
+>         start_year: 2000
+>         end_year: 2014
+>     scripts:
+>       myscript:
+>         script: ~/esmvaltool_workshop/mydiag.py
+>   timeseries:
+>     description: "my test diagnostic script"
+>     variables:
+>       tas_ts:
+>         short_name: tas
+>         preprocessor: mypp_ts
+>         mip: Amon
+>         start_year: 1970
+>         end_year: 2014
+>     scripts:
+>       myscript:
+>         script: ~/esmvaltool_workshop/mydiag.py
+> 
+```
+{: .solution}
+
+> ## full mydiag.py
+> ```python
+> # import libraries for logging
+> import logging
+> from pathlib import Path
+> from pprint import pformat
+> 
+> from esmvaltool.diag_scripts.shared import run_diagnostic, group_metadata
+> 
+> import iris
+> import iris.quickplot
+> import matplotlib.pyplot as plt
+> 
+> #from esmvaltool.diag_scripts.shared.plot import quickplot
+> 
+> logger = logging.getLogger(Path(__file__).stem)
+> 
+> def main(cfg):
+>     """Compute the time average for each input dataset."""
+>     # Get a description of the preprocessed data that we will use as input.
+>     input_data = cfg['input_data'].values()
+> 
+>     #selections = select_metadata(input_data, short_name='tas', project='CMIP6')
+>     #logger.info("Example of how to select only CMIP6 temperature data:\n%s",
+>                 #pformat(selections))
+> 
+>     # Example of how to loop over dervied variables
+>     groups = group_metadata(input_data, 'variable_group', sort='dataset')
+>     for group_name in groups:
+>         logger.info("Processing variable %s", group_name)
+>         for attributes in groups[group_name]:
+>             logger.info("Processing dataset %s", attributes['dataset'])
+>             input_file = attributes['filename']
+>             var_name   = attributes['short_name']
+>             cube = iris.load_cube(input_file)
+> 
+>             basename = Path(input_file).stem
+>             plot_dir = cfg['plot_dir']
+>             file_type = cfg['output_file_type']
+> 
+>             plt.figure()
+>             if "tas_map" in group_name:
+>                 iris.quickplot.pcolormesh(cube,cmap='RdBu')
+>                 plt.gca().coastlines()
+>                 plt.colorbar()
+> 
+>             if "tas_ts" in group_name:
+>                 plot = iris.quickplot.plot(cube)
+> 
+>             plt.savefig(plot_dir+'/'+group_name+'_'+basename+'.'+file_type)
+> 
+>             """
+>             if cfg.get('quickplot'):
+>                 #Create the plot
+>                 quickplot(cube, **cfg['quickplot'])
+>                 #And save the plot
+>                 save_figure(basename, provenance_record, cfg)
+>             """
+> 
+> 
+> if __name__ == '__main__':
+> 
+>     with run_diagnostic() as config:
+>         main(config)
+> 
+```
+{: .solution}
+
 ---
 ### Add observatioinal dataset
 
@@ -178,6 +319,47 @@ One can check the data with `ncdump`.
 {: .solution}
 {: .challenge}
 
+> ## Move the cmorized file to the obs datalake
+>
+> As a test for everyone, it is better you move this to your own /scratch folder
+> > ## Solution
+> > ```
+> > mkdir -p /sratch/$USER/ESGF/obsdata/Tier2/HadCRUT5
+cp /projects/NS9560K/www/diagnostics/esmvaltool/yanchun/tmp/data_formatting_20230531_091536/Tier2/HadCRUT5/OBS_HadCRUT5_ground_5.0.1.0-* /sratch/$USER/ESGF/obsdata/Tier2/HadCRUT5
+> > ```
+> {: .solution}
+{: .challenge}
+
+
+
+> ## Add an additional_dataset entry in your recipe:
+```yaml
+    additional_datasets:
+      - {dataset: HadCRUT5, project: OBS, type: analysis, mip: Amon, version: 1, tier: 2, start_year: 2000, end_year: 2004}
+```
+And then run the recipe again
+```bash
+esmvaltool run ./recipe_mydiag.yml
+```
+You will get some error again:
+```
+2023-05-31 09:21:43,268 UTC [652706] ERROR   Looked for files matching
+/scratchs/yanchun/ESGF/obsdata/Tier2/HadCRUT5/OBS_HadCRUT5_analysis_1_Amon_tas[_.]*nc
+2023-05-31 09:21:43,268 UTC [652706] ERROR   Set 'log_level' to 'debug' to get more information
+2023-05-31 09:21:43,268 UTC [652706] ERROR   Could not create all tasks
+2023-05-31 09:21:43,269 UTC [652706] ERROR   Missing data for preprocessor map/tas_map:
+- Missing data for Dataset: tas, Amon, OBS, HadCRUT5, 1
+2023-05-31 09:21:43,269 UTC [652706] ERROR   Missing data for preprocessor timeseries/tas_ts:
+- Missing data for Dataset: tas, Amon, OBS, HadCRUT5, 1
+```
+>
+That is the name set by the ESMValTool format is wrong. Try to manually rename it.
+```bash
+mv OBS_HadCRUT5_ground_5.0.1.0-analysis_Amon_tas_185001-202303.nc OBS_HadCRUT5_analysis_1_Amon_tas_185001-202303.nc
+```
+{: .solution}
+
+**The recipe should work now! 🎉**
 
 ---
 ### Add data provenance record
