@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7993944.svg)](https://doi.org/10.5281/zenodo.7993944)
+
 ## An introductory course for the ESMValTool.
 
 This is a hands-on training material for the [ESMValTool Workshop](https://nordicesmhub.github.io/esmvaltool-workshop).
